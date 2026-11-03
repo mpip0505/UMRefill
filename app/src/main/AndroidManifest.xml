@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Add permissions here when a feature needs them, e.g. CAMERA for QR scanning and report photos. -->
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -11,18 +13,32 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.UMRefill">
+
+        <!-- Shell -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.UMRefill"
-            android:windowSoftInputMode="adjustResize">
+            android:name=".ui.main.MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.floorguide.FloorActivity" android:exported="false" />
+
+        <!-- Dev A: browse and list -->
+        <activity android:name=".ui.browse.FloorListActivity" android:exported="false" />
+
+        <!-- Dev B: floor guide and QR -->
+        <activity android:name=".ui.floorguide.PointDetailActivity" android:exported="false" />
+
+        <!-- Dev C: reporting and admin -->
+        <activity android:name=".ui.report.ReportActivity" android:exported="false" />
+        <activity android:name=".ui.admin.ReportQueueActivity" android:exported="false" />
+        <activity android:name=".ui.admin.ManagePointsActivity" android:exported="false" />
+
+        <!-- Dev D: accounts and impact -->
+        <activity android:name=".ui.account.LoginActivity" android:exported="false" />
+        <activity android:name=".ui.account.ResetPasswordActivity" android:exported="false" />
     </application>
 
 </manifest>

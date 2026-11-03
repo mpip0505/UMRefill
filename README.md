@@ -6,7 +6,7 @@ UMRefill is an Android app for the UM community. Pick a faculty and a floor, and
 
 > **Status:** planning and early development. Group project for **WIA2007 Mobile Application Development**, Semester 1, 2026/2027. Sections marked _(planned)_ describe the design, not finished code.
 
-**SDG:** 6 (Clean Water and Sanitation), targets 6.1 (safe drinking water access) and 6.b (community participation in water management).
+**SDG:** 6 (Clean Water and Sanitation). Primary target 6.b (community participation in water management); 6.1 (safe drinking water access) as a secondary link, pending lecturer confirmation.
 
 ---
 
@@ -25,13 +25,14 @@ This is a static floor-plan viewer with pins, **not** live indoor turn-by-turn n
 
 ## Features _(planned)_
 
-Five modules, three functional requirements each.
+Six modules, three or more functional requirements each. Full list with acceptance criteria: [`docs/UMRefill Product Requirements Document.md`](docs/).
 
 1. **Access and profile:** browse without login; UM email login for reporting and favourites; normal-user and admin roles.
 2. **Faculty and floor browser:** pick faculty then floor, list points with location notes, filter by status and type.
 3. **2D floor guide:** floor plan with pinned points, nearest working point highlighted, tap a pin for type, status and last-confirmed date.
 4. **Community reporting:** report a point broken, empty, dirty or working, with optional photo; status updates; admin review.
 5. **Impact and admin:** personal and campus counters of refills and bottles avoided; admin manages points, floor plans and CSV export.
+6. **AI-assisted reporting:** on-device photo check, report text classification, and "likely faulty" flagging.
 
 ### Non-functional requirements
 
@@ -42,7 +43,7 @@ Five modules, three functional requirements each.
 
 | Layer | Choice |
 |---|---|
-| Platform | Native Android, Kotlin, Android Studio |
+| Platform | Native Android, **Java + XML layouts**, Android Studio |
 | Database | Room (SQLite) on the device |
 | Accounts | Local accounts, hashed passwords; browsing needs no login |
 | Floor plans | Images bundled in the app, points placed by coordinates |
@@ -60,7 +61,7 @@ The app reads and writes data only through repository interfaces, for example `R
 ### Requirements
 
 - Android Studio (latest stable version)
-- An Android emulator or a phone with Android 6.0 (API 23) or higher
+- An Android emulator or a phone with Android 8.0 (API 26) or higher
 
 ### Run the app
 
@@ -73,29 +74,47 @@ cd umrefill
 2. Select an emulator or connected phone.
 3. Press **Run**.
 
-On first launch the app seeds sample faculties, floors, refill points and reports, so everyone sees the same demo data. To reset, clear the app's storage or reinstall.
+For now the app runs on **in-memory fake data** (`data/fake/FakeStore.java`), so everyone sees the same sample faculties, floors and points, and nothing is saved between runs. The sample data is made up and will be replaced by the building walk-through data.
 
-## Project structure _(planned)_
+Demo accounts (temporary shortcuts are on the Account tab until login is built):
+
+| Email | Password | Role |
+|---|---|---|
+| `admin@um.edu.my` | `admin123` | Admin |
+| `student@siswa.um.edu.my` | `student123` | User |
+
+**Who builds what, and how to start:** see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Project structure
 
 ```
-app/
-  src/main/java/.../
-    data/         Room entities, DAOs, database, repository implementations
-    domain/       repository interfaces and models
-    ui/           screens and view models, grouped by module
-    floorguide/   floor-plan rendering, pins, nearest-point logic
-  src/main/assets/
-    floors/       floor-plan images per faculty and floor
-    seed/         sample data loaded on first run
-schemas/          exported Room schema JSON
-docs/             requirements, design notes, test results
+app/src/main/java/com/umrefill/app/
+  data/
+    entity/       Room entities: Faculty, Floor, EntryPoint, RefillPoint, Report, User, RefillLog
+    repo/         repository interfaces (the only way screens touch data)
+    fake/         in-memory fake repositories + sample data (used until Room is ready)
+    ServiceLocator.java   picks which repository implementation the app uses
+  ai/             PhotoChecker, ReportClassifier, FaultFlagger (Module 6)
+  ui/
+    main/         MainActivity: bottom navigation shell
+    browse/       faculty list (worked example) and floor list
+    floorguide/   floor screen shell, plan view, list view, point detail
+    report/       report a point
+    scan/         QR scan tab
+    account/      account tab, login, reset password
+    impact/       impact tab
+    admin/        admin tab, report queue, manage points
+    common/       BaseActivity, TwoLineAdapter, Placeholder (temporary)
+  util/           Extras (intent keys), SessionManager, PasswordUtils, AppExecutors
+app/src/test/     local unit tests (example: FakeRefillPointRepositoryTest)
+docs/             PRD, AI usage log, evidence (survey, interviews, test results)
 ```
 
 ## Team workflow
 
 - Work on a **feature branch** and open a **pull request**. At least one teammate reviews before merge. No direct pushes to `main`.
 - **Schema changes** (entities, DAOs, database version) go through the data layer lead via an issue or Trello card, in a small PR. Rebase after it merges.
-- Build screens against the repository **interfaces**, using a fake in-memory version until Room is ready.
+- Build screens against the repository **interfaces** via `ServiceLocator`, never `new FakeXxxRepository()`. The fake version is used until Room is ready, and swapping it changes one file.
 - While developing, Room may wipe and rebuild on schema change. Reinstall or clear app data after pulling a schema change.
 - Do **not** commit `.db` files, `build/` or `local.properties`.
 - Keep Trello cards and commit messages clear, since commit logs and board reports are used as contribution evidence.

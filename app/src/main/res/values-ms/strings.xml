@@ -1,0 +1,9 @@
+<resources>
+    <!-- Bahasa Melayu. Any string missing here falls back to English (values/strings.xml). -->
+    <string name="tab_browse">Cari</string>
+    <string name="tab_impact">Impak</string>
+    <string name="tab_scan">Imbas QR</string>
+    <string name="tab_account">Akaun</string>
+    <string name="tab_admin">Admin</string>
+    <string name="choose_faculty">Pilih fakulti</string>
+</resources>
