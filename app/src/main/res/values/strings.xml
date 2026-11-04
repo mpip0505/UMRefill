@@ -1,3 +1,26 @@
 <resources>
     <string name="app_name">UMRefill</string>
+
+    <!-- Bottom navigation -->
+    <string name="tab_browse">Browse</string>
+    <string name="tab_impact">Impact</string>
+    <string name="tab_scan">Scan QR</string>
+    <string name="tab_account">Account</string>
+    <string name="tab_admin">Admin</string>
+
+    <!-- Shell screens -->
+    <string name="choose_faculty">Choose a faculty</string>
+    <string name="view_plan">Plan</string>
+    <string name="view_list">List</string>
+
+    <!-- Screen titles -->
+    <string name="title_floors">Floors</string>
+    <string name="title_point">Refill point</string>
+    <string name="title_report">Report status</string>
+    <string name="title_login">Log in</string>
+    <string name="title_reset">Reset password</string>
+    <string name="title_report_queue">Report queue</string>
+    <string name="title_manage_points">Manage points</string>
+
+    <!-- Add your screen's strings below, grouped under a comment with your module name. -->
 </resources>

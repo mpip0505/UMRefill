@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.UMRefill" parent="Theme.Material3.Light">
+        <item name="colorPrimary">@color/umr_primary</item>
+        <item name="colorOnPrimary">@color/umr_on_primary</item>
+        <item name="colorSecondary">@color/umr_secondary</item>
+        <item name="android:windowBackground">@color/umr_background</item>
+    </style>
 
-    <style name="Theme.UMRefill" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="UMR.Title" parent="TextAppearance.Material3.TitleLarge" />
+    <style name="UMR.Hint" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
 </resources>

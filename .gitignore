@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Per-user Android Studio state (causes merge conflicts if committed)
+/.idea/deviceManager.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/shelf
