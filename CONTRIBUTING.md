@@ -5,9 +5,12 @@ Requirement IDs (FR1.1, NFR2...) refer to the PRD in `docs/`.
 
 ## 1. Get the project running (everyone, first day)
 
-1. Clone the repo and open the folder in Android Studio. Let Gradle sync finish.
+**Android Studio is mandatory.** All coding, building, running and debugging is done in Android Studio, not another editor.
+
+1. Follow **Getting started** in [`README.md`](README.md#getting-started): install the latest stable Android Studio, clone the repo, and let Gradle sync finish (the first sync is slow).
 2. Run the app on an emulator (API 26 or higher). You should see the 5 tabs and the faculty list.
-3. Make a warm-up PR: add your name to the Team table in `README.md` (see section 4 for how). This proves Git, Android Studio and reviews all work for you.
+3. Run the unit tests once (right-click `app/src/test/java` → **Run Tests**) so you know they pass before you change anything.
+4. Make a warm-up PR: add your name to the Team table in `README.md` (see section 4 for how). This proves Git, Android Studio and reviews all work for you.
 
 ## 2. Who owns what
 

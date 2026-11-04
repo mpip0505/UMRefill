@@ -43,7 +43,9 @@ Six modules, three or more functional requirements each. Full list with acceptan
 
 | Layer | Choice |
 |---|---|
-| Platform | Native Android, **Java + XML layouts**, Android Studio |
+| Platform | Native Android, **Java + XML layouts** |
+| IDE | **Android Studio (required for all team members)** |
+| Build | Gradle 9.6 wrapper, Android Gradle Plugin 9.4, JDK 25, compile/target SDK 37, min SDK 26 |
 | Database | Room (SQLite) on the device |
 | Accounts | Local accounts, hashed passwords; browsing needs no login |
 | Floor plans | Images bundled in the app, points placed by coordinates |
@@ -58,21 +60,51 @@ The app reads and writes data only through repository interfaces, for example `R
 
 ## Getting started
 
+> **Android Studio is the required IDE for this project.** Every team member codes, builds, runs and debugs in Android Studio. Don't use VS Code, IntelliJ Community or other editors for project work. Layout previews, the emulator, run configurations and the shared `.idea` settings all assume Android Studio.
+
 ### Requirements
 
-- Android Studio (latest stable version)
-- An Android emulator or a phone with Android 8.0 (API 26) or higher
+| What | Version | Notes |
+|---|---|---|
+| Android Studio | Latest stable, recent enough for **Android Gradle Plugin 9.4** | Older versions fail to sync with "AGP version not supported". Update via **Help → Check for Updates**. |
+| JDK | **25** (the JetBrains Runtime bundled with Android Studio) | Gradle downloads it automatically on first sync (`gradle/gradle-daemon-jvm.properties`), so you don't need to install a JDK yourself. |
+| Android SDK Platform | **API 37** (compile/target SDK) | Install in **Tools → SDK Manager → SDK Platforms**. Android Studio usually offers this when you sync. |
+| Device | Emulator or phone on **Android 8.0 (API 26) or higher** | A Pixel emulator on a recent API level is the easiest option. |
+| Gradle | 9.6 (via the wrapper) | Already in the repo. Don't install Gradle separately. |
+| Git | Any recent version | And a GitHub account added as a collaborator on the repo. |
 
-### Run the app
+### First-time setup
+
+1. **Clone the repo.** In Android Studio: **File → New → Project from Version Control**, paste the URL below, and pick a folder. Or from a terminal:
+   ```bash
+   git clone https://github.com/mpip0505/UMRefill.git
+   ```
+   Then open the `UMRefill` folder with **File → Open**. Open the root folder, not `app/`.
+2. **Let Gradle sync finish.** The first sync downloads Gradle, JDK 25 and the dependencies, so it can take 5 to 10 minutes. Wait for the progress bar at the bottom of the window to finish.
+3. **Install missing SDK parts** if Android Studio asks (for example "Install missing SDK platform 37"). Click the link in the sync error.
+4. **Create an emulator** if you don't have one: **Tools → Device Manager → + → Create Virtual Device**, pick a Pixel phone and a recent system image.
+5. **Run it.** Select the `app` run configuration and your device in the toolbar, then press **Run ▶** (`Shift+F10` on Windows, `Ctrl+R` on macOS). You should see 5 bottom tabs and the faculty list.
+
+Android Studio creates `local.properties` with your SDK path. It's machine-specific and git-ignored, so never commit it.
+
+### Run the tests
+
+In Android Studio, right-click `app/src/test/java` and choose **Run 'Tests in ...'**. Or from the Android Studio **Terminal** tab:
 
 ```bash
-git clone https://github.com/<your-org>/umrefill.git
-cd umrefill
+./gradlew testDebugUnitTest     # unit tests (gradlew.bat on Windows)
+./gradlew assembleDebug         # build a debug APK
 ```
 
-1. Open the project folder in Android Studio and let Gradle sync.
-2. Select an emulator or connected phone.
-3. Press **Run**.
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Sync fails with an AGP or Gradle version error | Update Android Studio to the latest stable version. Don't downgrade the versions in `gradle/libs.versions.toml`. |
+| "Failed to find target android-37" | Install SDK Platform 37 in the SDK Manager. |
+| Strange build errors after pulling | **Build → Clean Project**, then **File → Sync Project with Gradle Files**. If that doesn't fix it, try **File → Invalidate Caches → Invalidate and Restart**. |
+| App crashes after a teammate changed the database schema | Uninstall the app from the emulator, or clear its data, and run again. |
+| Emulator very slow or won't start | Enable hardware virtualisation (Windows: turn on virtualisation in BIOS and Windows Hypervisor Platform), or run on a real phone with USB debugging on. |
 
 For now the app runs on **in-memory fake data** (`data/fake/FakeStore.java`), so everyone sees the same sample faculties, floors and points, and nothing is saved between runs. The sample data is made up and will be replaced by the building walk-through data.
 
@@ -116,7 +148,8 @@ docs/             PRD, AI usage log, evidence (survey, interviews, test results)
 - **Schema changes** (entities, DAOs, database version) go through the data layer lead via an issue or Trello card, in a small PR. Rebase after it merges.
 - Build screens against the repository **interfaces** via `ServiceLocator`, never `new FakeXxxRepository()`. The fake version is used until Room is ready, and swapping it changes one file.
 - While developing, Room may wipe and rebuild on schema change. Reinstall or clear app data after pulling a schema change.
-- Do **not** commit `.db` files, `build/` or `local.properties`.
+- Do **not** commit `.db` files, `build/`, `local.properties` or personal `.idea` files (`workspace.xml`, `deviceManager.xml`, `deploymentTargetSelector.xml`). Shared `.idea` files such as code style and inspections are committed on purpose.
+- Don't change the AGP, Gradle or SDK versions in your PR. If Android Studio offers an upgrade ("AGP Upgrade Assistant"), decline it and tell the data lead.
 - Keep Trello cards and commit messages clear, since commit logs and board reports are used as contribution evidence.
 
 ## Team
