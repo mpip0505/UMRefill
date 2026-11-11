@@ -140,7 +140,10 @@ app/src/main/java/com/umrefill/app/
   util/           Extras (intent keys), SessionManager, PasswordUtils, AppExecutors
 app/src/test/     local unit tests (example: FakeRefillPointRepositoryTest)
 docs/             PRD, AI usage log, evidence (survey, interviews, test results)
+  design/         design brief (personas, hard rules, screens), see DESIGN_BRIEF.md
 ```
+
+**Before building any screen, read [`docs/design/DESIGN_BRIEF.md`](docs/design/DESIGN_BRIEF.md).** It has the personas and the hard rules every screen is checked against.
 
 ## Team workflow
 
