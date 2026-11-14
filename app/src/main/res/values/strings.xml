@@ -22,5 +22,21 @@
     <string name="title_report_queue">Report queue</string>
     <string name="title_manage_points">Manage points</string>
 
-    <!-- Add your screen's strings below, grouped under a comment with your module name. -->
+    <!-- Module 1: Accounts (Dev D) -->
+    <string name="hint_email">UM email</string>
+    <string name="hint_password">Password</string>
+    <string name="btn_login">Log in</string>
+    <string name="btn_logout">Log out</string>
+    <string name="error_email_required">Email is required</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_invalid_um_email">Only @um.edu.my and @siswa.um.edu.my emails are accepted</string>
+    <string name="error_login_failed">Invalid email or password</string>
+    <string name="btn_forgot_password_temp">Forgot password (temp)</string>
+    <string name="account_title">Account</string>
+    <string name="account_guest">Guest</string>
+    <string name="account_not_logged_in">You are currently browsing as a guest.</string>
+    <string name="account_role_format">Role: %1$s</string>
+    <string name="temp_demo_heading">Demo shortcuts (temp)</string>
+    <string name="temp_login_student">Log in as demo student (temp)</string>
+    <string name="temp_login_admin">Log in as demo admin (temp)</string>
 </resources>
