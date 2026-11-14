@@ -6,4 +6,24 @@
     <string name="tab_account">Akaun</string>
     <string name="tab_admin">Admin</string>
     <string name="choose_faculty">Pilih fakulti</string>
+
+    <!-- Module 1: Accounts (Dev D) -->
+    <string name="title_login">Log masuk</string>
+    <string name="title_reset">Tetapkan semula kata laluan</string>
+    <string name="hint_email">E-mel UM</string>
+    <string name="hint_password">Kata laluan</string>
+    <string name="btn_login">Log masuk</string>
+    <string name="btn_logout">Log keluar</string>
+    <string name="error_email_required">E-mel diperlukan</string>
+    <string name="error_password_required">Kata laluan diperlukan</string>
+    <string name="error_invalid_um_email">Hanya e-mel @um.edu.my dan @siswa.um.edu.my diterima</string>
+    <string name="error_login_failed">E-mel atau kata laluan tidak sah</string>
+    <string name="btn_forgot_password_temp">Lupa kata laluan (sementara)</string>
+    <string name="account_title">Akaun</string>
+    <string name="account_guest">Tetamu</string>
+    <string name="account_not_logged_in">Anda kini melayari sebagai tetamu.</string>
+    <string name="account_role_format">Peranan: %1$s</string>
+    <string name="temp_demo_heading">Pintasan demo (sementara)</string>
+    <string name="temp_login_student">Log masuk sebagai pelajar demo (sementara)</string>
+    <string name="temp_login_admin">Log masuk sebagai admin demo (sementara)</string>
 </resources>
