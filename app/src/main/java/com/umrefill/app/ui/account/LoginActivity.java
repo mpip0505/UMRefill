@@ -71,6 +71,8 @@ public class LoginActivity extends BaseActivity {
     }
 
     private void attemptLogin() {
+        txtError.setVisibility(View.GONE);
+
         String email = editEmail.getText() != null ? editEmail.getText().toString().trim() : "";
         String password = editPassword.getText() != null ? editPassword.getText().toString() : "";
 
@@ -101,7 +103,6 @@ public class LoginActivity extends BaseActivity {
         if (user == null) {
             txtError.setText(R.string.error_login_failed);
             txtError.setVisibility(View.VISIBLE);
-            layoutPassword.setError(getString(R.string.error_login_failed));
             return;
         }
 

@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import com.umrefill.app.R;
 import com.umrefill.app.data.ServiceLocator;
 import com.umrefill.app.data.entity.User;
+import com.umrefill.app.data.entity.UserRole;
 import com.umrefill.app.util.SessionManager;
 
 /**
@@ -74,7 +75,8 @@ public class AccountFragment extends Fragment {
                     : user.email;
             txtUserName.setText(name);
             txtUserEmail.setText(user.email);
-            txtUserRole.setText(getString(R.string.account_role_format, user.role));
+            String roleText = formatRole(user.role);
+            txtUserRole.setText(getString(R.string.account_role_format, roleText));
             txtUserRole.setVisibility(View.VISIBLE);
 
             btnLogin.setVisibility(View.GONE);
@@ -87,6 +89,20 @@ public class AccountFragment extends Fragment {
             btnLogin.setVisibility(View.VISIBLE);
             btnLogout.setVisibility(View.GONE);
         }
+    }
+
+    private String formatRole(String role) {
+        int resId = getRoleStringRes(role);
+        return resId != 0 ? getString(resId) : (role != null ? role : "");
+    }
+
+    static int getRoleStringRes(String role) {
+        if (UserRole.ADMIN.equalsIgnoreCase(role)) {
+            return R.string.role_admin;
+        } else if (UserRole.USER.equalsIgnoreCase(role)) {
+            return R.string.role_user;
+        }
+        return 0;
     }
 
     private void logout() {
