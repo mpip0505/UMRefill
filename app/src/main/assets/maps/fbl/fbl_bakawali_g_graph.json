@@ -1,0 +1,30 @@
+{
+  "nodes": [
+    { "id": "main_entrance_stairs", "xPct": 0.355, "yPct": 0.675, "label": "Main Entrance Stairs" },
+    { "id": "lobi_south", "xPct": 0.355, "yPct": 0.520, "label": "Lobi South" },
+    { "id": "dot1_lobi_tb2", "xPct": 0.338, "yPct": 0.520, "label": "Red Dot 1: Lobi Dispenser (Near TB2)" },
+    { "id": "lobi_center", "xPct": 0.355, "yPct": 0.470, "label": "Lobi Central Corridor Junction" },
+    { "id": "lobi_north_stairs", "xPct": 0.368, "yPct": 0.415, "label": "Lobi Central Stairs (Bilik Suis)" },
+    { "id": "west_corridor_mid", "xPct": 0.220, "yPct": 0.468, "label": "West Lecturer Corridor (TB8/TB9)" },
+    { "id": "west_corridor_end", "xPct": 0.092, "yPct": 0.468, "label": "West Toilet & TB18 End" },
+    { "id": "west_stairs", "xPct": 0.092, "yPct": 0.415, "label": "West Stairs (TB17)" },
+    { "id": "east_corridor_mid", "xPct": 0.500, "yPct": 0.472, "label": "East Lecture Corridor (Mersawa/Merpadi)" },
+    { "id": "east_oku_jct", "xPct": 0.632, "yPct": 0.472, "label": "East Corridor (Tandas OKU & TB26)" },
+    { "id": "east_stairs", "xPct": 0.632, "yPct": 0.415, "label": "East Stairs (Near TB27)" },
+    { "id": "perpustakaan_corridor", "xPct": 0.670, "yPct": 0.472, "label": "Perpustakaan & Cafe Bahasa Entrance" }
+  ],
+  "edges": [
+    { "from": "main_entrance_stairs", "to": "lobi_south", "weight": 0.155 },
+    { "from": "lobi_south", "to": "dot1_lobi_tb2", "weight": 0.017 },
+    { "from": "lobi_south", "to": "lobi_center", "weight": 0.050 },
+    { "from": "dot1_lobi_tb2", "to": "lobi_center", "weight": 0.053 },
+    { "from": "lobi_center", "to": "lobi_north_stairs", "weight": 0.056 },
+    { "from": "lobi_center", "to": "west_corridor_mid", "weight": 0.135 },
+    { "from": "west_corridor_mid", "to": "west_corridor_end", "weight": 0.128 },
+    { "from": "west_corridor_end", "to": "west_stairs", "weight": 0.053 },
+    { "from": "lobi_center", "to": "east_corridor_mid", "weight": 0.145 },
+    { "from": "east_corridor_mid", "to": "east_oku_jct", "weight": 0.132 },
+    { "from": "east_oku_jct", "to": "east_stairs", "weight": 0.057 },
+    { "from": "east_oku_jct", "to": "perpustakaan_corridor", "weight": 0.038 }
+  ]
+}
