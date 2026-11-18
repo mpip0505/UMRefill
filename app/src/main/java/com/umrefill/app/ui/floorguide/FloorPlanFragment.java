@@ -1,19 +1,21 @@
 package com.umrefill.app.ui.floorguide;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -23,11 +25,13 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
+import com.umrefill.app.BuildConfig;
 import com.umrefill.app.R;
 import com.umrefill.app.data.ServiceLocator;
 import com.umrefill.app.data.entity.EntryPoint;
 import com.umrefill.app.data.entity.Floor;
 import com.umrefill.app.data.entity.PointStatus;
+import com.umrefill.app.data.entity.PointType;
 import com.umrefill.app.data.entity.RefillPoint;
 import com.umrefill.app.data.repo.RefillPointRepository;
 import com.umrefill.app.util.AppExecutors;
@@ -91,7 +95,7 @@ public class FloorPlanFragment extends Fragment {
             floorId = getArguments().getLong(Extras.FLOOR_ID, -1L);
         }
 
-        applyEdgeToEdgeInsetsFix(view);
+        applyFragmentEdgeToEdgeInsets(view);
 
         imgFloorPlan = view.findViewById(R.id.imgFloorPlan);
         chipGroupFloors = view.findViewById(R.id.chipGroupFloors);
@@ -102,15 +106,15 @@ public class FloorPlanFragment extends Fragment {
         txtNearestTitle = view.findViewById(R.id.txtNearestTitle);
         txtNearestNote = view.findViewById(R.id.txtNearestNote);
 
-        // Long-press the top yellow notice banner to toggle between Curated JSON and BitmapCorridorExtractor live
+        // In debug builds only, long-pressing the notice banner toggles between Curated JSON and BitmapCorridorExtractor
         View cardNotice = view.findViewById(R.id.cardFloorNotice);
-        if (cardNotice != null) {
+        if (cardNotice != null && BuildConfig.DEBUG) {
             cardNotice.setOnLongClickListener(v -> {
                 Pathfinder.FORCE_BITMAP_EXTRACTOR_FOR_TEST = !Pathfinder.FORCE_BITMAP_EXTRACTOR_FOR_TEST;
-                String mode = Pathfinder.FORCE_BITMAP_EXTRACTOR_FOR_TEST
-                        ? "Auto BitmapCorridorExtractor Mode (Vision Grid)"
-                        : "Curated JSON Graph Mode (Assets)";
-                android.widget.Toast.makeText(requireContext(), mode, android.widget.Toast.LENGTH_SHORT).show();
+                int modeRes = Pathfinder.FORCE_BITMAP_EXTRACTOR_FOR_TEST
+                        ? R.string.debug_mode_bitmap_extractor
+                        : R.string.debug_mode_curated_json;
+                Toast.makeText(requireContext(), getString(modeRes), Toast.LENGTH_SHORT).show();
                 loadFloorAndComputeRoute();
                 return true;
             });
@@ -118,7 +122,7 @@ public class FloorPlanFragment extends Fragment {
 
         imgFloorPlan.setOnPointPinClickListener(this::openPointDetail);
 
-        // Snap user tap/drag directly onto the nearest walkable corridor centerline
+        // Snap tap or drag coordinates directly onto the nearest walkable corridor centerline
         imgFloorPlan.setOnCustomEntryMoveListener((xPct, yPct) -> {
             if (!isAdded()) return;
             EntryPoint rawTap = new EntryPoint(
@@ -137,14 +141,20 @@ public class FloorPlanFragment extends Fragment {
         });
     }
 
-    private void applyEdgeToEdgeInsetsFix(@NonNull View fragmentRoot) {
-        View activityContent = requireActivity().findViewById(android.R.id.content);
-        View target = activityContent != null ? activityContent : fragmentRoot;
-        ViewCompat.setOnApplyWindowInsetsListener(target, (v, windowInsets) -> {
-            Insets bars = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            return WindowInsetsCompat.CONSUMED;
+    /**
+     * Applies bottom system-bar inset padding at the fragment level only so activity containers
+     * are not double-padded.
+     */
+    private void applyFragmentEdgeToEdgeInsets(@NonNull View fragmentRoot) {
+        final int baseLeft = fragmentRoot.getPaddingLeft();
+        final int baseTop = fragmentRoot.getPaddingTop();
+        final int baseRight = fragmentRoot.getPaddingRight();
+        final int baseBottom = fragmentRoot.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentRoot, (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            v.setPadding(baseLeft, baseTop, baseRight, baseBottom + bars.bottom);
+            return windowInsets;
         });
     }
 
@@ -155,13 +165,17 @@ public class FloorPlanFragment extends Fragment {
     }
 
     private void loadFloorAndComputeRoute() {
+        if (!isAdded()) return;
+        final Context appContext = requireContext().getApplicationContext();
+        final long requestedFloorId = this.floorId;
+
         AppExecutors.io().execute(() -> {
             RefillPointRepository repo = ServiceLocator.refillPoints();
-            Floor floor = repo.getFloor(floorId);
+            Floor floor = repo.getFloor(requestedFloorId);
             List<Floor> facultyFloors = (floor != null)
                     ? repo.getFloors(floor.facultyId) : Collections.emptyList();
-            List<EntryPoint> loadedEntries = repo.getEntryPoints(floorId);
-            List<RefillPoint> loadedPoints = repo.getPoints(floorId);
+            List<EntryPoint> loadedEntries = repo.getEntryPoints(requestedFloorId);
+            List<RefillPoint> loadedPoints = repo.getPoints(requestedFloorId);
 
             // Check if current floor has at least one WORKING station; if not, find nearest working floor in faculty
             boolean hasWorkingOnCurrent = false;
@@ -175,15 +189,18 @@ public class FloorPlanFragment extends Fragment {
             Floor foundFallbackFloor = null;
             RefillPoint foundFallbackPoint = null;
             if (!hasWorkingOnCurrent && floor != null) {
-                int bestLevelDiff = Integer.MAX_VALUE;
+                String currentBuilding = extractBuildingPrefix(floor.label);
+                int bestScore = Integer.MAX_VALUE;
                 for (Floor candidateFloor : facultyFloors) {
-                    if (candidateFloor.floorId == floorId) continue;
+                    if (candidateFloor.floorId == requestedFloorId) continue;
                     List<RefillPoint> otherPoints = repo.getPoints(candidateFloor.floorId);
                     for (RefillPoint op : otherPoints) {
                         if (PointStatus.WORKING.equals(op.status)) {
-                            int diff = Math.abs(candidateFloor.level - floor.level);
-                            if (diff < bestLevelDiff) {
-                                bestLevelDiff = diff;
+                            boolean sameBuilding = currentBuilding.equals(extractBuildingPrefix(candidateFloor.label));
+                            int buildingPenalty = sameBuilding ? 0 : 100;
+                            int score = buildingPenalty + Math.abs(candidateFloor.level - floor.level);
+                            if (score < bestScore) {
+                                bestScore = score;
                                 foundFallbackFloor = candidateFloor;
                                 foundFallbackPoint = op;
                             }
@@ -195,16 +212,16 @@ public class FloorPlanFragment extends Fragment {
 
             FloorGraph loadedGraph = null;
             int drawableResId = 0;
-            if (floor != null && floor.planImage != null && isAdded()) {
-                drawableResId = resolveDrawableId(floor.planImage);
+            if (floor != null && floor.planImage != null) {
+                drawableResId = resolveDrawableId(appContext, floor.planImage);
                 Bitmap fallbackBmp = null;
                 if (drawableResId != 0 && Pathfinder.FORCE_BITMAP_EXTRACTOR_FOR_TEST) {
-                    fallbackBmp = BitmapFactory.decodeResource(requireContext().getResources(), drawableResId);
+                    fallbackBmp = BitmapFactory.decodeResource(appContext.getResources(), drawableResId);
                 }
-                loadedGraph = Pathfinder.loadGraphOrExtract(requireContext(), floor.planImage, fallbackBmp);
+                loadedGraph = Pathfinder.loadGraphOrExtract(appContext, floor.planImage, fallbackBmp);
                 if (loadedGraph == null && drawableResId != 0) {
-                    fallbackBmp = BitmapFactory.decodeResource(requireContext().getResources(), drawableResId);
-                    loadedGraph = Pathfinder.loadGraphOrExtract(requireContext(), floor.planImage, fallbackBmp);
+                    fallbackBmp = BitmapFactory.decodeResource(appContext.getResources(), drawableResId);
+                    loadedGraph = Pathfinder.loadGraphOrExtract(appContext, floor.planImage, fallbackBmp);
                 }
             }
 
@@ -215,7 +232,8 @@ public class FloorPlanFragment extends Fragment {
             final RefillPoint finalFallbackPoint = foundFallbackPoint;
 
             AppExecutors.main().execute(() -> {
-                if (!isAdded()) return;
+                // Ignore stale result if the fragment detached or the user switched to another floor mid-load
+                if (!isAdded() || this.floorId != requestedFloorId) return;
                 if (finalFloor != null) {
                     requireActivity().setTitle(finalFloor.label);
                 }
@@ -242,49 +260,50 @@ public class FloorPlanFragment extends Fragment {
         });
     }
 
-    private int resolveDrawableId(@NonNull String planImage) {
-        String pkg = requireContext().getPackageName();
-        int id = requireContext().getResources().getIdentifier(planImage, "drawable", pkg);
-        if (id != 0) return id;
-
-        switch (planImage) {
-            case "fbl_anggerik_g":
-                return requireContext().getResources().getIdentifier("map_fbl_anggerik_ground", "drawable", pkg);
-            case "fbl_anggerik_f1":
-                return requireContext().getResources().getIdentifier("map_fbl_anggerik_floor1", "drawable", pkg);
-            case "fbl_bakawali_g":
-                return requireContext().getResources().getIdentifier("map_fbl_bakawali_ground", "drawable", pkg);
-            case "fbl_bakawali_f1":
-                return requireContext().getResources().getIdentifier("map_fbl_bakawali_floor1", "drawable", pkg);
-            default:
-                return 0;
+    @NonNull
+    private static String extractBuildingPrefix(@NonNull String label) {
+        int dotIdx = label.indexOf('·');
+        if (dotIdx > 0) {
+            return label.substring(0, dotIdx).trim();
         }
+        int dashIdx = label.indexOf('-');
+        if (dashIdx > 0) {
+            return label.substring(0, dashIdx).trim();
+        }
+        return "";
+    }
+
+    private int resolveDrawableId(@NonNull Context context, @NonNull String planImage) {
+        return context.getResources().getIdentifier(planImage, "drawable", context.getPackageName());
     }
 
     private void bindFloorSwitcherChips() {
+        Context context = requireContext();
         chipGroupFloors.removeAllViews();
         int[][] states = new int[][]{
                 new int[]{android.R.attr.state_checked},
                 new int[]{-android.R.attr.state_checked}
         };
         ColorStateList bgColors = new ColorStateList(states, new int[]{
-                Color.parseColor("#D6E4F5"),
-                Color.parseColor("#FFFFFF")
+                ContextCompat.getColor(context, R.color.umr_primary_container),
+                ContextCompat.getColor(context, R.color.umr_surface_white)
         });
         ColorStateList textColors = new ColorStateList(states, new int[]{
-                Color.parseColor("#0B2A47"),
-                Color.parseColor("#4A5361")
+                ContextCompat.getColor(context, R.color.umr_on_primary_container),
+                ContextCompat.getColor(context, R.color.umr_on_surface_variant)
         });
+        ColorStateList strokeColor = ColorStateList.valueOf(
+                ContextCompat.getColor(context, R.color.umr_outline));
 
         for (Floor f : siblingFloors) {
-            Chip chip = new Chip(requireContext());
+            Chip chip = new Chip(context);
             chip.setText(f.label);
             chip.setCheckable(true);
             chip.setClickable(true);
             chip.setChipBackgroundColor(bgColors);
             chip.setTextColor(textColors);
             chip.setChipStrokeWidth(2f);
-            chip.setChipStrokeColor(ColorStateList.valueOf(Color.parseColor("#C4CBD4")));
+            chip.setChipStrokeColor(strokeColor);
             chip.setEnsureMinTouchTargetSize(true);
             chip.setChecked(f.floorId == floorId);
 
@@ -327,6 +346,7 @@ public class FloorPlanFragment extends Fragment {
     }
 
     private void recalculateAndRenderPath() {
+        Context context = requireContext();
         if (activeEntryPoint == null && !entryPoints.isEmpty()) {
             activeEntryPoint = Pathfinder.snapEntryToCorridor(entryPoints.get(0), floorGraph);
         }
@@ -349,16 +369,25 @@ public class FloorPlanFragment extends Fragment {
             txtNearestOverline.setText(getString(
                     R.string.nearest_overline_format, route.estimatedMeters));
             txtNearestBadge.setVisibility(View.VISIBLE);
-            txtNearestBadge.setBackgroundColor(Color.parseColor("#D8F1E8"));
-            txtNearestBadge.setTextColor(Color.parseColor("#00573F"));
+            txtNearestBadge.setBackgroundColor(
+                    ContextCompat.getColor(context, R.color.umr_status_available_bg));
+            txtNearestBadge.setTextColor(
+                    ContextCompat.getColor(context, R.color.umr_status_available_text));
             txtNearestBadge.setText(R.string.badge_available);
             txtNearestTitle.setText(nearest.name);
             txtNearestNote.setText(getString(
                     R.string.nearest_direction_format,
-                    nearest.type,
+                    formatPointTypeLabel(nearest.type),
                     route.turnCount,
                     nearest.locationNote));
             cardNearestPoint.setOnClickListener(v -> openPointDetail(nearest));
+        } else if (route.hasUnreachableWorkingPoints) {
+            imgFloorPlan.setFloorData(refillPoints, activeEntryPoint, Collections.emptyList(), -1L);
+            txtNearestOverline.setText(R.string.nearest_overline_unreachable);
+            txtNearestBadge.setVisibility(View.GONE);
+            txtNearestTitle.setText(R.string.route_unreachable_points);
+            txtNearestNote.setText("");
+            cardNearestPoint.setOnClickListener(null);
         } else if (fallbackWorkingFloor != null && fallbackWorkingPoint != null) {
             // Cross-Floor Faculty Fallback: route user to nearest Stairs/Lift and offer 1-tap floor switch
             Pathfinder.RouteResult exitRoute = Pathfinder.findRouteToNearestExitStairs(
@@ -366,18 +395,20 @@ public class FloorPlanFragment extends Fragment {
             imgFloorPlan.setFloorData(refillPoints, activeEntryPoint, exitRoute.path, -1L);
 
             String stairsName = (exitRoute.targetExitStairs != null)
-                    ? exitRoute.targetExitStairs.name : "Stairs / Lift";
+                    ? exitRoute.targetExitStairs.name : getString(R.string.default_stairs_lift);
             txtNearestOverline.setText(getString(
                     R.string.cross_floor_overline_format, fallbackWorkingFloor.label));
             txtNearestBadge.setVisibility(View.VISIBLE);
-            txtNearestBadge.setBackgroundColor(Color.parseColor("#FCEFD2"));
-            txtNearestBadge.setTextColor(Color.parseColor("#6B4500"));
+            txtNearestBadge.setBackgroundColor(
+                    ContextCompat.getColor(context, R.color.umr_status_low_bg));
+            txtNearestBadge.setTextColor(
+                    ContextCompat.getColor(context, R.color.umr_status_low_text));
             txtNearestBadge.setText(R.string.badge_switch_floor);
             txtNearestTitle.setText(getString(
                     R.string.cross_floor_title_format, stairsName, fallbackWorkingPoint.name));
             txtNearestNote.setText(getString(
                     R.string.cross_floor_note_format,
-                    fallbackWorkingPoint.type,
+                    formatPointTypeLabel(fallbackWorkingPoint.type),
                     fallbackWorkingFloor.label));
             final long targetFloorId = fallbackWorkingFloor.floorId;
             cardNearestPoint.setOnClickListener(v -> switchToFloor(targetFloorId));
@@ -388,6 +419,19 @@ public class FloorPlanFragment extends Fragment {
             txtNearestTitle.setText(R.string.no_working_points);
             txtNearestNote.setText("");
             cardNearestPoint.setOnClickListener(null);
+        }
+    }
+
+    @NonNull
+    private String formatPointTypeLabel(@NonNull String rawType) {
+        switch (rawType) {
+            case PointType.COLD:
+                return getString(R.string.filter_type_cold);
+            case PointType.FILTERED:
+                return getString(R.string.filter_type_filtered);
+            case PointType.NORMAL:
+            default:
+                return getString(R.string.filter_type_normal);
         }
     }
 

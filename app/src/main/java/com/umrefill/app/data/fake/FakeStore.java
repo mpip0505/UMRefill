@@ -16,14 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * In-memory tables shared by the fake repositories,
- * seeded with exact FBL red-dot coordinates,
- * calibrated to the exact pixel coordinates
- * of map_fbl_*.webp drawables.
+ * In-memory tables shared by the fake repositories, so every screen can be built before Room exists.
  *
- *  Demo accounts: admin@um.edu.my / admin123 (admin)
- *  student@siswa.um.edu.my / student123 (user)
+ * PLACEHOLDER SAMPLE DATA: the FSKTM and ENG faculties, floors and positions below are made up.
+ * Replace them with the walk-through data (seed sheet) once it is collected.
+ * FBL floors (floorId 6-9) are seeded with surveyed coordinates calibrated to map_fbl_*.webp drawables.
  *
+ * Demo accounts: admin@um.edu.my / admin123 (admin), student@siswa.um.edu.my / student123 (user).
  */
 final class FakeStore {
     static final List<Faculty> faculties = new ArrayList<>();
@@ -53,17 +52,18 @@ final class FakeStore {
         faculties.add(new Faculty(2, "Faculty of Engineering", "ENG"));
         faculties.add(new Faculty(3, "Faculty of Languages and Linguistics", "FBL"));
 
+        // Placeholder sample floors for FSKTM and ENG (to be updated with walk-through data)
         floors.add(new Floor(1, 1, 0, "Block A - Ground Floor", "fsktm_blk_a_g"));
         floors.add(new Floor(2, 1, 1, "Block A - Floor 1", "fsktm_blk_a_f1"));
         floors.add(new Floor(3, 1, 2, "Block A - Floor 2", "fsktm_blk_a_f2"));
         floors.add(new Floor(4, 2, 0, "Ground floor", null));
         floors.add(new Floor(5, 2, 1, "Level 1", null));
 
-        // FBL Floors matched to res/drawable/map_fbl_*.webp
+        // FBL Floors matched to res/drawable/map_fbl_*.webp (level is 0=Ground, 1=Floor 1 per building)
         floors.add(new Floor(6, 3, 0, "Anggerik · Ground Floor", "map_fbl_anggerik_ground"));
         floors.add(new Floor(7, 3, 1, "Anggerik · Floor 1", "map_fbl_anggerik_floor1"));
-        floors.add(new Floor(8, 3, 2, "Bakawali · Ground Floor", "map_fbl_bakawali_ground"));
-        floors.add(new Floor(9, 3, 3, "Bakawali · Floor 1", "map_fbl_bakawali_floor1"));
+        floors.add(new Floor(8, 3, 0, "Bakawali · Ground Floor", "map_fbl_bakawali_ground"));
+        floors.add(new Floor(9, 3, 1, "Bakawali · Floor 1", "map_fbl_bakawali_floor1"));
 
         for (long floorId = 1; floorId <= 5; floorId++) {
             entryPoints.add(new EntryPoint(floorId * 10 + 1, floorId, "Main lifts", 0.50f, 0.50f));
@@ -97,7 +97,7 @@ final class FakeStore {
         entryPoints.add(new EntryPoint(93, 9, "West Stairs (Near TS2)", 0.102f, 0.385f));
         entryPoints.add(new EntryPoint(94, 9, "East Stairs (Near TS26)", 0.890f, 0.385f));
 
-        // Existing FSKTM & ENG Refill Points
+        // Placeholder sample refill points for FSKTM & ENG
         points.add(new RefillPoint(1, 1, "Cooler near the lifts", PointType.COLD, PointStatus.WORKING,
                 0.58f, 0.45f, "Right of the main lifts", now - (2L * hour), "UMR-FSKTM-G-01", true));
         points.add(new RefillPoint(2, 1, "Tap by the cafe", PointType.NORMAL, PointStatus.BROKEN,
