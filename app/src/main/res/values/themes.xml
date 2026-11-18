@@ -5,8 +5,6 @@
         <item name="colorOnPrimary">@color/umr_on_primary</item>
         <item name="colorSecondary">@color/umr_secondary</item>
         <item name="android:windowBackground">@color/umr_background</item>
-        <!-- Prevents SDK 37 Edge-to-Edge from pushing screens under the purple ActionBar/status bar -->
-        <item name="android:fitsSystemWindows">true</item>
     </style>
 
     <style name="UMR.Title" parent="TextAppearance.Material3.TitleLarge" />
