@@ -14,13 +14,15 @@ import java.util.Queue;
 
 /**
  * Automatically extracts a strictly-interior, centerline-weighted FloorGraph from a UM Refill
- * floor plan Bitmap. Uses exterior-air flood-fill to strip outer building border halos,
- * medial-axis wall penalties to keep paths centered, and graph-level component bridging.
+ * floor plan Bitmap. Uses adaptive building-footprint bounds detection (supporting FR5.3 uploads),
+ * exterior-air flood-fill to strip outer building border halos, medial-axis wall penalties to keep
+ * paths centered, and graph-level component bridging.
  */
 public final class BitmapCorridorExtractor {
 
     private static final int GRID_SIZE = 96;
     private static final int MIN_ISLAND_CELLS = 5;
+    private static final int MIN_ADJACENT_ROOM_CELLS = 3;
     private static final float MAX_GRAPH_BRIDGE_DIST_PCT = 0.28f;
     private static final float WALL_HUG_PENALTY = 1.45f;
 
@@ -31,19 +33,13 @@ public final class BitmapCorridorExtractor {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
 
-        // Exclude top 11% (title header) and bottom 14% (legend icons) of UM Refill map templates
-        int minY = (int) (GRID_SIZE * 0.11f);
-        int maxY = (int) (GRID_SIZE * 0.86f);
-        int minX = 2;
-        int maxX = GRID_SIZE - 2;
-
         boolean[][] roomGrid = new boolean[GRID_SIZE][GRID_SIZE];
         boolean[][] whiteBgGrid = new boolean[GRID_SIZE][GRID_SIZE];
         boolean[][] greyCorridorGrid = new boolean[GRID_SIZE][GRID_SIZE];
 
-        // 1. Sample 3x3 patches per grid cell
-        for (int gy = minY; gy < maxY; gy++) {
-            for (int gx = minX; gx < maxX; gx++) {
+        // 1. Sample 3x3 patches across the full 96x96 grid (no hardcoded faculty crop limits)
+        for (int gy = 1; gy < GRID_SIZE - 1; gy++) {
+            for (int gx = 1; gx < GRID_SIZE - 1; gx++) {
                 int corridorHits = 0;
                 int roomHits = 0;
                 int whiteHits = 0;
@@ -77,10 +73,17 @@ public final class BitmapCorridorExtractor {
             }
         }
 
-        // 2. Flood-fill Exterior Air from the outer perimeter of the map bounds
+        // 2. Dynamically detect the active building bounds, excluding detached header/legend bands if present
+        int[] bounds = detectActiveBuildingBounds(roomGrid, greyCorridorGrid);
+        int minX = bounds[0];
+        int maxX = bounds[1];
+        int minY = bounds[2];
+        int maxY = bounds[3];
+
+        // 3. Flood-fill Exterior Air from the outer perimeter of the active bounds
         boolean[][] exteriorAir = markExteriorAir(whiteBgGrid, roomGrid, minX, maxX, minY, maxY);
 
-        // 3. Build initial interior walkable grid, stripping anti-aliased outer building wall halos
+        // 4. Build initial interior walkable grid, stripping anti-aliased outer building wall halos
         boolean[][] rawWalkable = new boolean[GRID_SIZE][GRID_SIZE];
         for (int y = minY + 1; y < maxY - 1; y++) {
             for (int x = minX + 1; x < maxX - 1; x++) {
@@ -100,7 +103,7 @@ public final class BitmapCorridorExtractor {
             }
         }
 
-        // 4. Morphological 3x3 closing strictly inside the building to heal text labels ("Laluan keluar", "Foyer")
+        // 5. Morphological 3x3 closing strictly inside the building to heal text labels ("Laluan keluar", "Foyer")
         boolean[][] closed = new boolean[GRID_SIZE][GRID_SIZE];
         for (int y = minY + 1; y < maxY - 1; y++) {
             for (int x = minX + 1; x < maxX - 1; x++) {
@@ -119,10 +122,10 @@ public final class BitmapCorridorExtractor {
             }
         }
 
-        // 5. Prune tiny isolated noise specks (< MIN_ISLAND_CELLS)
-        boolean[][] cleanWalkable = retainValidIslands(closed, minX, maxX, minY, maxY);
+        // 6. Prune tiny isolated noise specks and legend icons not bordering room blocks
+        boolean[][] cleanWalkable = retainValidIslands(closed, roomGrid, minX, maxX, minY, maxY);
 
-        // 6. Identify wall-adjacent cells so we can penalize wall-hugging ("fan meetups at borders")
+        // 7. Identify wall-adjacent cells so we can penalize wall-hugging ("fan meetups at borders")
         boolean[][] nearWall = new boolean[GRID_SIZE][GRID_SIZE];
         for (int y = minY + 1; y < maxY - 1; y++) {
             for (int x = minX + 1; x < maxX - 1; x++) {
@@ -139,7 +142,7 @@ public final class BitmapCorridorExtractor {
             }
         }
 
-        // 7. Build 8-directional FloorGraph with Medial-Axis Centerline weighting
+        // 8. Build 8-directional FloorGraph with Medial-Axis Centerline weighting
         FloorGraph graph = new FloorGraph();
         float baseStep = 1.0f / GRID_SIZE;
         float baseDiag = 1.4142f / GRID_SIZE;
@@ -171,11 +174,64 @@ public final class BitmapCorridorExtractor {
             }
         }
 
-        // 8. Graph-Level Connected Component Bridging: guarantees staircase choke-points
+        // 9. Graph-Level Connected Component Bridging: guarantees staircase choke-points
         //    (e.g. Laluan keluar / To Bakawali -> Hunian Cipta -> Hunian Tamah) have valid GraphEdges
         bridgeDisconnectedGraphComponents(graph);
 
         return graph;
+    }
+
+    /**
+     * Dynamically detects the vertical and horizontal bounding box of the main building footprint
+     * by locating the largest contiguous vertical band of rows containing structural room blocks.
+     * Supports both template maps (with headers/legends) and raw full-bleed floor plans (FR5.3).
+     */
+    @NonNull
+    private static int[] detectActiveBuildingBounds(
+            @NonNull boolean[][] roomGrid,
+            @NonNull boolean[][] greyCorridorGrid) {
+        int[] rowRoomCounts = new int[GRID_SIZE];
+        for (int y = 1; y < GRID_SIZE - 1; y++) {
+            int count = 0;
+            for (int x = 1; x < GRID_SIZE - 1; x++) {
+                if (roomGrid[y][x] || greyCorridorGrid[y][x]) {
+                    count++;
+                }
+            }
+            rowRoomCounts[y] = count;
+        }
+
+        // Find the longest vertical run of rows with active building structure (bridging 1-row gaps)
+        int bestStartY = 1;
+        int bestEndY = GRID_SIZE - 1;
+        int bestMass = 0;
+
+        int curStart = -1;
+        int curMass = 0;
+        int emptyGap = 0;
+        for (int y = 1; y < GRID_SIZE - 1; y++) {
+            if (rowRoomCounts[y] >= 4) {
+                if (curStart == -1) curStart = y;
+                curMass += rowRoomCounts[y];
+                emptyGap = 0;
+                if (curMass > bestMass) {
+                    bestMass = curMass;
+                    bestStartY = curStart;
+                    bestEndY = y + 1;
+                }
+            } else if (curStart != -1) {
+                emptyGap++;
+                if (emptyGap >= 3) {
+                    curStart = -1;
+                    curMass = 0;
+                    emptyGap = 0;
+                }
+            }
+        }
+
+        int minY = Math.max(1, bestStartY - 2);
+        int maxY = Math.min(GRID_SIZE - 1, bestEndY + 2);
+        return new int[]{1, GRID_SIZE - 1, minY, maxY};
     }
 
     /**
@@ -358,7 +414,9 @@ public final class BitmapCorridorExtractor {
 
     @NonNull
     private static boolean[][] retainValidIslands(
-            @NonNull boolean[][] grid, int minX, int maxX, int minY, int maxY) {
+            @NonNull boolean[][] grid,
+            @NonNull boolean[][] roomGrid,
+            int minX, int maxX, int minY, int maxY) {
         boolean[][] visited = new boolean[GRID_SIZE][GRID_SIZE];
         boolean[][] out = new boolean[GRID_SIZE][GRID_SIZE];
         int[] dx = {-1, 0, 1, -1, 1, -1, 0, 1};
@@ -371,6 +429,7 @@ public final class BitmapCorridorExtractor {
                 Queue<int[]> q = new ArrayDeque<>();
                 q.add(new int[]{x, y});
                 visited[y][x] = true;
+                int adjacentRooms = 0;
 
                 while (!q.isEmpty()) {
                     int[] curr = q.poll();
@@ -378,14 +437,18 @@ public final class BitmapCorridorExtractor {
                     for (int d = 0; d < 8; d++) {
                         int nx = curr[0] + dx[d];
                         int ny = curr[1] + dy[d];
-                        if (nx >= minX && nx < maxX && ny >= minY && ny < maxY
-                                && grid[ny][nx] && !visited[ny][nx]) {
-                            visited[ny][nx] = true;
-                            q.add(new int[]{nx, ny});
+                        if (nx >= minX && nx < maxX && ny >= minY && ny < maxY) {
+                            if (roomGrid[ny][nx]) {
+                                adjacentRooms++;
+                            }
+                            if (grid[ny][nx] && !visited[ny][nx]) {
+                                visited[ny][nx] = true;
+                                q.add(new int[]{nx, ny});
+                            }
                         }
                     }
                 }
-                if (comp.size() >= MIN_ISLAND_CELLS) {
+                if (comp.size() >= MIN_ISLAND_CELLS && adjacentRooms >= MIN_ADJACENT_ROOM_CELLS) {
                     for (int[] c : comp) {
                         out[c[1]][c[0]] = true;
                     }

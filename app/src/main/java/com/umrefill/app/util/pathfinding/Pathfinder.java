@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.PriorityQueue;
 
@@ -29,8 +30,8 @@ import java.util.PriorityQueue;
  */
 public final class Pathfinder {
 
-    /** Set to true temporarily if you want to test BitmapCorridorExtractor instead of JSON files. */
-    public static boolean FORCE_BITMAP_EXTRACTOR_FOR_TEST = true;
+    /** Debug flag to force BitmapCorridorExtractor instead of curated JSON files during testing. */
+    public static boolean FORCE_BITMAP_EXTRACTOR_FOR_TEST = false;
 
     private static final float APPROX_FLOOR_SPAN_METERS = 85.0f;
 
@@ -44,6 +45,7 @@ public final class Pathfinder {
         public final float totalDistancePct;
         public final int estimatedMeters;
         public final int turnCount;
+        public final boolean hasUnreachableWorkingPoints;
 
         public RouteResult(@Nullable RefillPoint targetPoint,
                            @Nullable EntryPoint targetExitStairs,
@@ -51,12 +53,23 @@ public final class Pathfinder {
                            float totalDistancePct,
                            int estimatedMeters,
                            int turnCount) {
+            this(targetPoint, targetExitStairs, path, totalDistancePct, estimatedMeters, turnCount, false);
+        }
+
+        public RouteResult(@Nullable RefillPoint targetPoint,
+                           @Nullable EntryPoint targetExitStairs,
+                           @NonNull List<GraphNode> path,
+                           float totalDistancePct,
+                           int estimatedMeters,
+                           int turnCount,
+                           boolean hasUnreachableWorkingPoints) {
             this.targetPoint = targetPoint;
             this.targetExitStairs = targetExitStairs;
             this.path = path;
             this.totalDistancePct = totalDistancePct;
             this.estimatedMeters = estimatedMeters;
             this.turnCount = turnCount;
+            this.hasUnreachableWorkingPoints = hasUnreachableWorkingPoints;
         }
     }
 
@@ -145,7 +158,7 @@ public final class Pathfinder {
 
     /**
      * Snaps any arbitrary (xPct, yPct) tap coordinate directly onto the nearest walkable corridor edge
-     * so the "You are here" marker never sits inside a wall, room, or empty margin.
+     * so the current-position marker never sits inside a wall, room, or empty margin.
      */
     @NonNull
     public static EntryPoint snapEntryToCorridor(
@@ -176,7 +189,7 @@ public final class Pathfinder {
         }
 
         if (workingPoints.isEmpty()) {
-            return new RouteResult(null, null, Collections.emptyList(), Float.MAX_VALUE, 0, 0);
+            return new RouteResult(null, null, Collections.emptyList(), Float.MAX_VALUE, 0, 0, false);
         }
 
         if (baseGraph == null || baseGraph.nodes.isEmpty()) {
@@ -195,7 +208,7 @@ public final class Pathfinder {
                 directPath.add(new GraphNode("end", bestPoint.xPct, bestPoint.yPct, bestPoint.name));
             }
             int meters = Math.max(1, Math.round(bestDist * APPROX_FLOOR_SPAN_METERS));
-            return new RouteResult(bestPoint, null, directPath, bestDist, meters, 0);
+            return new RouteResult(bestPoint, null, directPath, bestDist, meters, 0, false);
         }
 
         RefillPoint bestTarget = null;
@@ -209,7 +222,7 @@ public final class Pathfinder {
             GraphNode goalProjected = insertProjectedNode(
                     workingGraph, "__virtual_goal__", candidate.xPct, candidate.yPct);
 
-            // Strictly use corridorPath only (no off-corridor diagonal shortcuts across rooms!)
+            // Strictly use corridorPath only to prevent diagonal shortcuts across rooms
             List<GraphNode> corridorPath = computeShortestPath(
                     workingGraph, startProjected.id, goalProjected.id);
             if (corridorPath.isEmpty()) continue;
@@ -224,9 +237,13 @@ public final class Pathfinder {
             }
         }
 
+        if (bestTarget == null) {
+            return new RouteResult(null, null, Collections.emptyList(), Float.MAX_VALUE, 0, 0, true);
+        }
+
         int meters = Math.max(1, Math.round(bestTotalCost * APPROX_FLOOR_SPAN_METERS));
         int turns = countSignificantTurns(bestPath);
-        return new RouteResult(bestTarget, null, bestPath, bestTotalCost, meters, turns);
+        return new RouteResult(bestTarget, null, bestPath, bestTotalCost, meters, turns, false);
     }
 
     /**
@@ -244,11 +261,19 @@ public final class Pathfinder {
             return new RouteResult(null, null, Collections.emptyList(), Float.MAX_VALUE, 0, 0);
         }
 
+        List<EntryPoint> verticalConnectors = new ArrayList<>();
+        for (EntryPoint ep : floorExits) {
+            if (isVerticalTransitionExit(ep)) {
+                verticalConnectors.add(ep);
+            }
+        }
+        List<EntryPoint> candidates = verticalConnectors.isEmpty() ? floorExits : verticalConnectors;
+
         EntryPoint bestExit = null;
         List<GraphNode> bestPath = Collections.emptyList();
         float bestCost = Float.MAX_VALUE;
 
-        for (EntryPoint exit : floorExits) {
+        for (EntryPoint exit : candidates) {
             FloorGraph workingGraph = cloneGraph(baseGraph);
             GraphNode startProjected = insertProjectedNode(
                     workingGraph, "__virtual_start__", currentPosition.xPct, currentPosition.yPct);
@@ -271,6 +296,23 @@ public final class Pathfinder {
         int meters = Math.max(1, Math.round(bestCost * APPROX_FLOOR_SPAN_METERS));
         int turns = countSignificantTurns(bestPath);
         return new RouteResult(null, bestExit, bestPath, bestCost, meters, turns);
+    }
+
+    /**
+     * Filters EntryPoints for vertical floor-to-floor connectors (stairs, lifts, bridges)
+     * while excluding ground-only main entrances and flat corridor junctions.
+     */
+    public static boolean isVerticalTransitionExit(@NonNull EntryPoint entryPoint) {
+        String lower = entryPoint.name.toLowerCase(Locale.ROOT);
+        if (lower.contains("main entrance")) {
+            return false;
+        }
+        return lower.contains("stair")
+                || lower.contains("lift")
+                || lower.contains("elevator")
+                || lower.contains("bridge")
+                || lower.contains("tangga")
+                || lower.contains("lif");
     }
 
     @NonNull
@@ -426,7 +468,7 @@ public final class Pathfinder {
 
     /**
      * Simplifies grid micro-steps and collinear waypoints using Ramer-Douglas-Peucker
-     * (epsilon = 0.012 normalized units) so auto-extracted bitmap paths render as straight lines.
+     * (epsilon = 0.004 normalized units) so auto-extracted bitmap paths render as straight lines.
      */
     @NonNull
     private static List<GraphNode> simplifyCollinearNodes(@NonNull List<GraphNode> raw) {
@@ -441,7 +483,6 @@ public final class Pathfinder {
             }
         }
         filtered.add(raw.get(raw.size() - 1));
-        // Inside Pathfinder.simplifyCollinearNodes(List<GraphNode> raw):
         return rdpSimplify(filtered, 0.004f);
     }
 
@@ -485,8 +526,6 @@ public final class Pathfinder {
         }
         return Math.abs((dy * p.xPct) - (dx * p.yPct) + (b.xPct * a.yPct) - (b.yPct * a.xPct)) / len;
     }
-
-
 
     private static int countSignificantTurns(@NonNull List<GraphNode> path) {
         if (path.size() < 3) return 0;
