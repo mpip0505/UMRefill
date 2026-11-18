@@ -49,32 +49,27 @@
     <string name="filter_type_normal">Normal</string>
     <string name="empty_points_filtered">No refill points match the selected filters.</string>
 
-    <!-- Module 3: Floor Guide & Dynamic Pathfinding (BM) -->
-    <string name="floor_guide_notice">ⓘ Cubit atau dwi-ketik untuk zum. Pilih pintu masuk atau ketik koridor untuk laluan.</string>
-    <string name="select_entry_point">Pintu masuk / tangga (atau ketik koridor)</string>
-    <string name="custom_map_position">Kedudukan koridor pilihan</string>
-    <string name="map_content_desc">Pelan lantai 2D interaktif. Cubit untuk zum, ketik koridor untuk ubah lokasi mula, atau ketik pin untuk butiran.</string>
-    <string name="nearest_overline_default">TERDEKAT BERFUNGSI</string>
-    <string name="nearest_overline_format">TERDEKAT BERFUNGSI · ~%1$d M</string>
-    <string name="nearest_overline_none">TIADA STESEN BERFUNGSI DI ARAS INI</string>
-    <string name="nearest_overline_unreachable">LALUAN TIDAK TERSEDIA</string>
-    <string name="cross_floor_overline_format">SEMUA ROSAK DI SINI · KE %1$s</string>
-    <string name="cross_floor_title_format">Jalan ke %1$s → %2$s</string>
-    <string name="cross_floor_note_format">%1$s tersedia di %2$s · Ketik kad untuk tukar aras</string>
-    <string name="default_stairs_lift">Tangga / Lif</string>
-    <string name="badge_available">✓ Tersedia</string>
-    <string name="badge_switch_floor">↪ Tukar Aras</string>
-    <string name="nearest_working_format">Terdekat berfungsi: %1$s (%2$s)</string>
-    <string name="nearest_direction_format">%1$s · %2$d belokan · %3$s</string>
-    <string name="no_working_points">Tiada stesen air berfungsi di aras ini.</string>
-    <string name="route_unreachable_points">Stesen air berfungsi wujud di aras ini, tetapi tiada laluan koridor bersambung ditemui.</string>
-    <string name="debug_mode_bitmap_extractor">Mod pengekstrak bitmap automatik (grid visi)</string>
-    <string name="debug_mode_curated_json">Mod graf JSON terpilih (aset)</string>
-    <string name="status_working">Tersedia</string>
-    <string name="status_empty">Kosong</string>
-    <string name="status_broken">Rosak</string>
-    <string name="status_dirty">Kotor</string>
-    <string name="status_out_of_service">Tidak Beroperasi</string>
-    <string name="status_unknown">Tidak diketahui</string>
+    <!-- Module 3: Floor Guide & Dynamic Pathfinding -->
+    <string name="floor_guide_notice">ⓘ Pinch or double-tap to zoom. Pick an entrance or tap any corridor to route.</string>
+    <string name="select_entry_point">Entrance / stairs (or tap any corridor)</string>
+    <string name="custom_map_position">Custom corridor position</string>
+    <string name="map_content_desc">Interactive 2D floor plan. Pinch to zoom, tap on corridors to move starting location, or tap a pin for details.</string>
+    <string name="nearest_overline_default">NEAREST WORKING</string>
+    <string name="nearest_overline_format">NEAREST WORKING · ~%1$d M</string>
+    <string name="nearest_overline_none">NO WORKING STATION ON FLOOR</string>
+    <string name="cross_floor_overline_format">ALL FAULTY HERE · GO TO %1$s</string>
+    <string name="cross_floor_title_format">Walk to %1$s → %2$s</string>
+    <string name="cross_floor_note_format">%1$s available on %2$s · Tap card to switch floor</string>
+    <string name="badge_available">✓ Available</string>
+    <string name="badge_switch_floor">↪ Switch Floor</string>
+    <string name="nearest_working_format">Nearest working: %1$s (%2$s)</string>
+    <string name="nearest_direction_format">%1$s · %2$d turns · %3$s</string>
+    <string name="no_working_points">No working refill points on this floor.</string>
+    <string name="status_working">Available</string>
+    <string name="status_empty">Empty</string>
+    <string name="status_broken">Faulty</string>
+    <string name="status_dirty">Dirty</string>
+    <string name="status_out_of_service">Out of Service</string>
+    <string name="status_unknown">Unknown</string>
 
 </resources>
