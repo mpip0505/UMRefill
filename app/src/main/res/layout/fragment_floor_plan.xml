@@ -1,49 +1,187 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- PLACEHOLDER. The owner replaces this whole layout with the real design. -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootFloorPlan"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="@dimen/screen_margin">
+    android:background="@color/umr_surface"
+    android:paddingStart="@dimen/screen_margin"
+    android:paddingEnd="@dimen/screen_margin"
+    android:paddingTop="8dp"
+    android:paddingBottom="12dp">
 
-    <TextView
-        android:id="@+id/txtTodo"
+    <!-- Screen 06 Floor Guide Notice Banner (Matches wireframe 06 Floor guide) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardFloorNotice"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        style="@style/UMR.Hint"
+        app:cardBackgroundColor="@color/umr_status_low_bg"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/umr_status_low_stroke"
+        app:strokeWidth="1dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Temporary shortcuts so other devs can reach their screens before this one is built. -->
-    <Button
-        android:id="@+id/btnTemp1"
-        style="?attr/materialButtonOutlinedStyle"
+        <TextView
+            android:id="@+id/txtFloorNotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:text="@string/floor_guide_notice"
+            android:textColor="@color/umr_status_low_text"
+            android:textSize="12sp" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- In-Screen Floor Switcher (Screen 06 wireframe component: switch floors in 1 tap) -->
+    <HorizontalScrollView
+        android:id="@+id/scrollFloorSwitcher"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/txtTodo"
+        android:layout_marginTop="6dp"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/cardFloorNotice"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <Button
-        android:id="@+id/btnTemp2"
-        style="?attr/materialButtonOutlinedStyle"
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupFloors"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleLine="true"
+            app:singleSelection="true"
+            app:selectionRequired="true" />
+    </HorizontalScrollView>
+
+    <!-- Entry Point Picker (Hard Rule 5 & 6: Material 3 exposed dropdown, >= 48dp touch target) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilEntryPoint"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnTemp1"
+        android:layout_marginTop="4dp"
+        android:hint="@string/select_entry_point"
+        app:boxBackgroundColor="@color/umr_surface_white"
+        app:boxCornerRadiusTopStart="10dp"
+        app:boxCornerRadiusTopEnd="10dp"
+        app:boxCornerRadiusBottomStart="10dp"
+        app:boxCornerRadiusBottomEnd="10dp"
+        app:layout_constraintTop_toBottomOf="@id/scrollFloorSwitcher"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <Button
-        android:id="@+id/btnTemp3"
-        style="?attr/materialButtonOutlinedStyle"
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/dropdownEntryPoint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:textSize="14sp"
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Map Card Container (Matches Screen 06 white bordered card hosting the 2D floor plan) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardMapContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:cardBackgroundColor="@color/umr_surface_white"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/umr_outline_variant"
+        app:strokeWidth="1dp"
+        app:layout_constraintTop_toBottomOf="@id/tilEntryPoint"
+        app:layout_constraintBottom_toTopOf="@id/cardNearestPoint"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.umrefill.app.ui.floorguide.DynamicMapView
+            android:id="@+id/imgFloorPlan"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="6dp"
+            android:contentDescription="@string/map_content_desc" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Nearest Working Point Card (Design System "Nearest-point card" component) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardNearestPoint"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnTemp2"
+        app:cardBackgroundColor="@color/umr_surface_white"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeColor="@color/umr_outline"
+        app:strokeWidth="1dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/txtNearestOverline"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/nearest_overline_default"
+                android:textAllCaps="true"
+                android:textColor="@color/umr_on_surface_variant"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/txtNearestBadge" />
+
+            <!-- Okabe-Ito Available Badge Pill (#00573F on #D8F1E8) -->
+            <TextView
+                android:id="@+id/txtNearestBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/umr_status_available_bg"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:text="@string/badge_available"
+                android:textColor="@color/umr_status_available_text"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <TextView
+                android:id="@+id/txtNearestTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/umr_on_surface"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toBottomOf="@id/txtNearestOverline"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <TextView
+                android:id="@+id/txtNearestNote"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/umr_on_surface_variant"
+                android:textSize="14sp"
+                app:layout_constraintTop_toBottomOf="@id/txtNearestTitle"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.card.MaterialCardView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

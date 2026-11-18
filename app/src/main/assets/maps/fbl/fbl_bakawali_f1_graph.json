@@ -1,0 +1,25 @@
+{
+  "nodes": [
+    { "id": "west_stairs_ts2", "xPct": 0.102, "yPct": 0.385, "label": "West Stairs (Near TS2)" },
+    { "id": "west_toilets_jct", "xPct": 0.102, "yPct": 0.462, "label": "West Restrooms Corridor End" },
+    { "id": "dot1_ts1_ts2", "xPct": 0.138, "yPct": 0.462, "label": "Red Dot 1: West Wing Dispenser (TS1/TS2)" },
+    { "id": "west_lecturer_mid", "xPct": 0.310, "yPct": 0.462, "label": "Lecturer Offices Mid Corridor (TS10/TS11)" },
+    { "id": "central_stairs_jct", "xPct": 0.498, "yPct": 0.465, "label": "Central Hallway Junction (TS20/SAC1)" },
+    { "id": "central_stairs", "xPct": 0.498, "yPct": 0.385, "label": "Central Stairs" },
+    { "id": "anda_di_sini_sac", "xPct": 0.645, "yPct": 0.470, "label": "SAC Foyer (Anda Di Sini / TS24)" },
+    { "id": "sac_east_mid", "xPct": 0.770, "yPct": 0.470, "label": "Bilik Komputer SAC Corridor (TS26)" },
+    { "id": "east_toilets_jct", "xPct": 0.890, "yPct": 0.470, "label": "East Restrooms Corridor End" },
+    { "id": "east_stairs_ts26", "xPct": 0.890, "yPct": 0.385, "label": "East Stairs (Near TS26)" }
+  ],
+  "edges": [
+    { "from": "west_stairs_ts2", "to": "west_toilets_jct", "weight": 0.077 },
+    { "from": "west_toilets_jct", "to": "dot1_ts1_ts2", "weight": 0.036 },
+    { "from": "dot1_ts1_ts2", "to": "west_lecturer_mid", "weight": 0.172 },
+    { "from": "west_lecturer_mid", "to": "central_stairs_jct", "weight": 0.188 },
+    { "from": "central_stairs_jct", "to": "central_stairs", "weight": 0.080 },
+    { "from": "central_stairs_jct", "to": "anda_di_sini_sac", "weight": 0.147 },
+    { "from": "anda_di_sini_sac", "to": "sac_east_mid", "weight": 0.125 },
+    { "from": "sac_east_mid", "to": "east_toilets_jct", "weight": 0.120 },
+    { "from": "east_toilets_jct", "to": "east_stairs_ts26", "weight": 0.085 }
+  ]
+}
