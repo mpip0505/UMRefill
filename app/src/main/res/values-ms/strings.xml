@@ -1,62 +1,27 @@
-<resources>
-    <!-- Bahasa Melayu. Any string missing here falls back to English (values/strings.xml). -->
-    <string name="tab_browse">Cari</string>
-    <string name="tab_impact">Impak</string>
-    <string name="tab_scan">Imbas QR</string>
-    <string name="tab_account">Akaun</string>
-    <string name="tab_admin">Admin</string>
-    <string name="choose_faculty">Pilih fakulti</string>
-
-    <!-- Module 1: Accounts (Dev D) -->
-    <string name="title_login">Log masuk</string>
-    <string name="title_reset">Tetapkan semula kata laluan</string>
-    <string name="hint_email">E-mel UM</string>
-    <string name="hint_password">Kata laluan</string>
-    <string name="btn_login">Log masuk</string>
-    <string name="btn_logout">Log keluar</string>
-    <string name="error_email_required">E-mel diperlukan</string>
-    <string name="error_password_required">Kata laluan diperlukan</string>
-    <string name="error_invalid_um_email">Hanya e-mel @um.edu.my dan @siswa.um.edu.my diterima</string>
-    <string name="error_login_failed">E-mel atau kata laluan tidak sah</string>
-    <string name="btn_forgot_password_temp">Lupa kata laluan (sementara)</string>
-    <string name="account_title">Akaun</string>
-    <string name="account_guest">Tetamu</string>
-    <string name="account_not_logged_in">Anda kini melayari sebagai tetamu.</string>
-    <string name="role_admin">Pentadbir</string>
-    <string name="role_user">Pengguna</string>
-    <string name="account_role_format">Peranan: %1$s</string>
-    <string name="temp_demo_heading">Pintasan demo (sementara)</string>
-    <string name="temp_login_student">Log masuk sebagai pelajar demo (sementara)</string>
-    <string name="temp_login_admin">Log masuk sebagai admin demo (sementara)</string>
-
-    <!-- Module 2: Browse & Filters (BM) -->
-    <string name="filter_working_only">Berfungsi sahaja</string>
-    <string name="filter_type_cold">Sejuk</string>
-    <string name="filter_type_filtered">Bertapis</string>
-    <string name="filter_type_normal">Biasa</string>
-    <string name="empty_points_filtered">Tiada stesen air sepadan dengan tapisan.</string>
-
-    <!-- Module 3: Floor Guide & Dynamic Pathfinding (BM) -->
-    <string name="floor_guide_notice">ⓘ Pelan lantai 2D dengan pin. Pilih pintu masuk atau ketik/seret koridor untuk laluan.</string>
-    <string name="select_entry_point">Pintu masuk / tangga (atau ketik pada peta)</string>
-    <string name="custom_map_position">Lokasi pilihan pada peta (diketik)</string>
-    <string name="map_content_desc">Pelan lantai 2D interaktif. Ketik atau seret pada koridor untuk ubah lokasi mula, atau ketik pin untuk butiran.</string>
-    <string name="nearest_overline_default">TERDEKAT BERFUNGSI</string>
-    <string name="nearest_overline_format">TERDEKAT BERFUNGSI · ~%1$d M</string>
-    <string name="nearest_overline_none">TIADA STESEN BERFUNGSI</string>
-    <string name="cross_floor_overline_format">SEMUA ROSAK DI SINI · KE %1$s</string>
-    <string name="cross_floor_title_format">Jalan ke %1$s → %2$s</string>
-    <string name="cross_floor_note_format">%1$s tersedia di %2$s · Ketik kad untuk tukar aras</string>
-    <string name="badge_available">✓ Tersedia</string>
-    <string name="badge_switch_floor">↪ Tukar Aras</string>
-    <string name="nearest_working_format">Terdekat berfungsi: %1$s (%2$s)</string>
-    <string name="nearest_direction_format">%1$s · %2$d belokan · %3$s</string>
-    <string name="no_working_points">Tiada stesen air berfungsi di aras ini.</string>
-    <string name="status_working">Tersedia</string>
-    <string name="status_empty">Kosong</string>
-    <string name="status_broken">Rosak</string>
-    <string name="status_dirty">Kotor</string>
-    <string name="status_out_of_service">Tidak Beroperasi</string>
-    <string name="status_unknown">Tidak diketahui</string>
-
-</resources>
+<!-- Module 3: Floor Guide & Dynamic Pathfinding (BM) -->
+<string name="floor_guide_notice">ⓘ Cubit atau dwi-ketik untuk zum. Pilih pintu masuk atau ketik koridor untuk laluan.</string>
+<string name="select_entry_point">Pintu masuk / tangga (atau ketik koridor)</string>
+<string name="custom_map_position">Kedudukan koridor pilihan</string>
+<string name="map_content_desc">Pelan lantai 2D interaktif. Cubit untuk zum, ketik koridor untuk ubah lokasi mula, atau ketik pin untuk butiran.</string>
+<string name="nearest_overline_default">TERDEKAT BERFUNGSI</string>
+<string name="nearest_overline_format">TERDEKAT BERFUNGSI · ~%1$d M</string>
+<string name="nearest_overline_none">TIADA STESEN BERFUNGSI DI ARAS INI</string>
+<string name="nearest_overline_unreachable">LALUAN TIDAK TERSEDIA</string>
+<string name="cross_floor_overline_format">SEMUA ROSAK DI SINI · KE %1$s</string>
+<string name="cross_floor_title_format">Jalan ke %1$s → %2$s</string>
+<string name="cross_floor_note_format">%1$s tersedia di %2$s · Ketik kad untuk tukar aras</string>
+<string name="default_stairs_lift">Tangga / Lif</string>
+<string name="badge_available">✓ Tersedia</string>
+<string name="badge_switch_floor">↪ Tukar Aras</string>
+<string name="nearest_working_format">Terdekat berfungsi: %1$s (%2$s)</string>
+<string name="nearest_direction_format">%1$s · %2$d belokan · %3$s</string>
+<string name="no_working_points">Tiada stesen air berfungsi di aras ini.</string>
+<string name="route_unreachable_points">Stesen air berfungsi wujud di aras ini, tetapi tiada laluan koridor bersambung ditemui.</string>
+<string name="debug_mode_bitmap_extractor">Mod pengekstrak bitmap automatik (grid visi)</string>
+<string name="debug_mode_curated_json">Mod graf JSON terpilih (aset)</string>
+<string name="status_working">Tersedia</string>
+<string name="status_empty">Kosong</string>
+<string name="status_broken">Rosak</string>
+<string name="status_dirty">Kotor</string>
+<string name="status_out_of_service">Tidak Beroperasi</string>
+<string name="status_unknown">Tidak diketahui</string>
