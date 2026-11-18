@@ -35,6 +35,8 @@
     <string name="account_title">Account</string>
     <string name="account_guest">Guest</string>
     <string name="account_not_logged_in">You are currently browsing as a guest.</string>
+    <string name="role_admin">Admin</string>
+    <string name="role_user">User</string>
     <string name="account_role_format">Role: %1$s</string>
     <string name="temp_demo_heading">Demo shortcuts (temp)</string>
     <string name="temp_login_student">Log in as demo student (temp)</string>

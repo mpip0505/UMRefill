@@ -22,6 +22,8 @@
     <string name="account_title">Akaun</string>
     <string name="account_guest">Tetamu</string>
     <string name="account_not_logged_in">Anda kini melayari sebagai tetamu.</string>
+    <string name="role_admin">Pentadbir</string>
+    <string name="role_user">Pengguna</string>
     <string name="account_role_format">Peranan: %1$s</string>
     <string name="temp_demo_heading">Pintasan demo (sementara)</string>
     <string name="temp_login_student">Log masuk sebagai pelajar demo (sementara)</string>
