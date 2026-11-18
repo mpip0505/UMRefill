@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -20,7 +21,9 @@ import android.view.animation.LinearInterpolator;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.core.content.ContextCompat;
 
+import com.umrefill.app.R;
 import com.umrefill.app.data.entity.EntryPoint;
 import com.umrefill.app.data.entity.PointStatus;
 import com.umrefill.app.data.entity.RefillPoint;
@@ -31,7 +34,7 @@ import java.util.List;
 
 /**
  * Interactive 2D Floor Plan view with animated directional pathway, pulsing target ring,
- * Okabe-Ito status pins, and live touch/drag starting-point repositioning (FR3.1, FR3.2).
+ * Okabe-Ito status pins, and throttled touch/drag starting-point repositioning (FR3.1, FR3.2).
  */
 public class DynamicMapView extends AppCompatImageView {
 
@@ -43,17 +46,18 @@ public class DynamicMapView extends AppCompatImageView {
         void onCustomEntryMoved(float xPct, float yPct);
     }
 
-    private static final int COLOR_UM_NAVY = Color.parseColor("#0B3B66");
-    private static final int COLOR_UM_GOLD = Color.parseColor("#F2B705");
-    private static final int COLOR_STATUS_AVAILABLE = Color.parseColor("#006B4F");
-    private static final int COLOR_STATUS_EMPTY = Color.parseColor("#D55E00");
-    private static final int COLOR_STATUS_FAULTY = Color.parseColor("#7A2E63");
-    private static final int COLOR_STATUS_UNKNOWN_OUTLINE = Color.parseColor("#5F6773");
-    private static final int COLOR_SURFACE_GRID = Color.parseColor("#EEF2F7");
-    private static final int COLOR_OUTLINE_VARIANT = Color.parseColor("#DDE2E8");
-
     private static final float MIN_ZOOM = 1.0f;
     private static final float MAX_ZOOM = 4.0f;
+    private static final long DRAG_ROUTE_THROTTLE_MS = 90L;
+
+    private int colorUmNavy;
+    private int colorUmGold;
+    private int colorStatusAvailable;
+    private int colorStatusEmpty;
+    private int colorStatusFaulty;
+    private int colorStatusUnknownOutline;
+    private int colorSurfaceGrid;
+    private int colorOutlineVariant;
 
     private final List<RefillPoint> points = new ArrayList<>();
     private final List<GraphNode> currentPath = new ArrayList<>();
@@ -96,6 +100,8 @@ public class DynamicMapView extends AppCompatImageView {
     private float lastTouchX;
     private float lastTouchY;
     private boolean isPanningOrScaling = false;
+    private boolean hasPendingDragRoute = false;
+    private long lastDragRouteCalcUptimeMs = 0L;
 
     private ScaleGestureDetector scaleDetector;
     private GestureDetector gestureDetector;
@@ -118,6 +124,15 @@ public class DynamicMapView extends AppCompatImageView {
     private void init(@NonNull Context context) {
         setScaleType(ScaleType.FIT_CENTER);
 
+        colorUmNavy = ContextCompat.getColor(context, R.color.umr_navy);
+        colorUmGold = ContextCompat.getColor(context, R.color.umr_gold);
+        colorStatusAvailable = ContextCompat.getColor(context, R.color.umr_status_available_fill);
+        colorStatusEmpty = ContextCompat.getColor(context, R.color.umr_status_empty_fill);
+        colorStatusFaulty = ContextCompat.getColor(context, R.color.umr_status_faulty_fill);
+        colorStatusUnknownOutline = ContextCompat.getColor(context, R.color.umr_status_unknown_outline);
+        colorSurfaceGrid = ContextCompat.getColor(context, R.color.umr_surface_grid);
+        colorOutlineVariant = ContextCompat.getColor(context, R.color.umr_outline_variant);
+
         pinVisualRadiusPx = dpToPx(context, 14f);
         pinSelectedRadiusPx = dpToPx(context, 18f);
         pinTouchTargetRadiusPx = dpToPx(context, 24f);
@@ -125,13 +140,13 @@ public class DynamicMapView extends AppCompatImageView {
         dashGapPx = dpToPx(context, 6f);
 
         pathOutlinePaint.setStyle(Paint.Style.STROKE);
-        pathOutlinePaint.setColor(COLOR_UM_NAVY);
+        pathOutlinePaint.setColor(colorUmNavy);
         pathOutlinePaint.setStrokeWidth(dpToPx(context, 6.5f));
         pathOutlinePaint.setStrokeCap(Paint.Cap.ROUND);
         pathOutlinePaint.setStrokeJoin(Paint.Join.ROUND);
 
         pathStrokePaint.setStyle(Paint.Style.STROKE);
-        pathStrokePaint.setColor(COLOR_UM_GOLD);
+        pathStrokePaint.setColor(colorUmGold);
         pathStrokePaint.setStrokeWidth(dpToPx(context, 3.5f));
         pathStrokePaint.setStrokeCap(Paint.Cap.ROUND);
         pathStrokePaint.setStrokeJoin(Paint.Join.ROUND);
@@ -143,7 +158,7 @@ public class DynamicMapView extends AppCompatImageView {
         chevronPaint.setStrokeJoin(Paint.Join.ROUND);
 
         pulsePaint.setStyle(Paint.Style.FILL);
-        pulsePaint.setColor(COLOR_STATUS_AVAILABLE);
+        pulsePaint.setColor(colorStatusAvailable);
 
         pinStrokePaint.setStyle(Paint.Style.STROKE);
         pinStrokePaint.setStrokeWidth(dpToPx(context, 2.2f));
@@ -160,10 +175,10 @@ public class DynamicMapView extends AppCompatImageView {
         labelPaint.setTextAlign(Paint.Align.CENTER);
 
         labelBgPaint.setStyle(Paint.Style.FILL);
-        labelBgPaint.setColor(COLOR_UM_NAVY);
+        labelBgPaint.setColor(colorUmNavy);
 
         fallbackGridPaint.setStyle(Paint.Style.STROKE);
-        fallbackGridPaint.setColor(COLOR_SURFACE_GRID);
+        fallbackGridPaint.setColor(colorSurfaceGrid);
         fallbackGridPaint.setStrokeWidth(dpToPx(context, 1.5f));
 
         scaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -342,7 +357,7 @@ public class DynamicMapView extends AppCompatImageView {
             canvas.drawLine(x, baseImageBounds.top, x, baseImageBounds.bottom, fallbackGridPaint);
             canvas.drawLine(baseImageBounds.left, y, baseImageBounds.right, y, fallbackGridPaint);
         }
-        pinStrokePaint.setColor(COLOR_OUTLINE_VARIANT);
+        pinStrokePaint.setColor(colorOutlineVariant);
         canvas.drawRoundRect(baseImageBounds, dpToPx(getContext(), 12f), dpToPx(getContext(), 12f), pinStrokePaint);
     }
 
@@ -401,14 +416,14 @@ public class DynamicMapView extends AppCompatImageView {
         float radius = dpToPx(getContext(), 9.5f) * invScale;
 
         pinFillPaint.setStyle(Paint.Style.FILL);
-        pinFillPaint.setColor(COLOR_UM_NAVY);
+        pinFillPaint.setColor(colorUmNavy);
         canvas.drawCircle(cx, cy, radius, pinFillPaint);
 
         pinStrokePaint.setColor(Color.WHITE);
         pinStrokePaint.setStrokeWidth(dpToPx(getContext(), 2.2f) * invScale);
         canvas.drawCircle(cx, cy, radius, pinStrokePaint);
 
-        pinFillPaint.setColor(COLOR_UM_GOLD);
+        pinFillPaint.setColor(colorUmGold);
         canvas.drawCircle(cx, cy, dpToPx(getContext(), 3.8f) * invScale, pinFillPaint);
 
         drawCalloutPill(canvas, cx, cy + radius + (dpToPx(getContext(), 11f) * invScale),
@@ -429,7 +444,7 @@ public class DynamicMapView extends AppCompatImageView {
                 pulsePaint.setAlpha(alpha);
                 canvas.drawCircle(cx, cy, pulseRadius, pulsePaint);
 
-                pinStrokePaint.setColor(COLOR_UM_NAVY);
+                pinStrokePaint.setColor(colorUmNavy);
                 pinStrokePaint.setStrokeWidth(dpToPx(getContext(), 3.0f) * invScale);
                 canvas.drawCircle(cx, cy, radius + (dpToPx(getContext(), 2.5f) * invScale), pinStrokePaint);
             }
@@ -497,15 +512,15 @@ public class DynamicMapView extends AppCompatImageView {
     private int resolveStatusColor(@NonNull String status) {
         switch (status) {
             case PointStatus.WORKING:
-                return COLOR_STATUS_AVAILABLE;
+                return colorStatusAvailable;
             case PointStatus.EMPTY:
-                return COLOR_STATUS_EMPTY;
+                return colorStatusEmpty;
             case PointStatus.BROKEN:
             case PointStatus.DIRTY:
             case PointStatus.OUT_OF_SERVICE:
-                return COLOR_STATUS_FAULTY;
+                return colorStatusFaulty;
             default:
-                return COLOR_STATUS_UNKNOWN_OUTLINE;
+                return colorStatusUnknownOutline;
         }
     }
 
@@ -525,15 +540,18 @@ public class DynamicMapView extends AppCompatImageView {
                 lastTouchX = x;
                 lastTouchY = y;
                 isPanningOrScaling = false;
+                hasPendingDragRoute = false;
                 return true;
 
             case MotionEvent.ACTION_POINTER_DOWN:
                 isPanningOrScaling = true;
+                hasPendingDragRoute = false;
                 return true;
 
             case MotionEvent.ACTION_MOVE:
                 if (scaleDetector.isInProgress()) {
                     isPanningOrScaling = true;
+                    hasPendingDragRoute = false;
                     lastTouchX = x;
                     lastTouchY = y;
                     return true;
@@ -552,7 +570,24 @@ public class DynamicMapView extends AppCompatImageView {
                         lastTouchY = y;
                     }
                 } else if (!isPanningOrScaling && Math.hypot(dx, dy) > dpToPx(getContext(), 6f)) {
-                    // At 1x zoom, dragging slides "You are here" along the corridors
+                    // At 1x zoom, throttle route recalculation during drag to prevent main-thread stutter
+                    computeBaseImageBounds();
+                    float cx = viewToCanvasX(x);
+                    float cy = viewToCanvasY(y);
+                    if (baseImageBounds.contains(cx, cy)) {
+                        hasPendingDragRoute = true;
+                        long nowMs = SystemClock.uptimeMillis();
+                        if (nowMs - lastDragRouteCalcUptimeMs >= DRAG_ROUTE_THROTTLE_MS) {
+                            lastDragRouteCalcUptimeMs = nowMs;
+                            hasPendingDragRoute = false;
+                            notifyCustomEntryMoved(cx, cy);
+                        }
+                    }
+                }
+                return true;
+
+            case MotionEvent.ACTION_UP:
+                if (!isPanningOrScaling && hasPendingDragRoute) {
                     computeBaseImageBounds();
                     float cx = viewToCanvasX(x);
                     float cy = viewToCanvasY(y);
@@ -560,10 +595,12 @@ public class DynamicMapView extends AppCompatImageView {
                         notifyCustomEntryMoved(cx, cy);
                     }
                 }
-                return true;
+                hasPendingDragRoute = false;
+                isPanningOrScaling = false;
+                break;
 
-            case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                hasPendingDragRoute = false;
                 isPanningOrScaling = false;
                 break;
         }
